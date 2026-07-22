@@ -1,0 +1,194 @@
+{
+  "name": "Telegram Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        192
+      ],
+      "id": "9c4cc4cd-cc96-498e-b48e-1eec4ea0f1e5",
+      "name": "Telegram Trigger",
+      "webhookId": "5cad570b-0d96-42ac-be0c-22f38648d745",
+      "credentials": {
+        "telegramApi": {
+          "id": "JP02pIQbLJAJNe7Q",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "AQ.Ab8RN6LuL-CMsQB8jYj6xpqvZf1kPn2VM2fNb-y9D9yRCqsXIA"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"You are a helpful AI assistant.\\n\\nUser Question:\\n{{$json.message.text}}\\n\\nInstructions:\\n- Reply in plain text only.\\n- Never use Markdown.\\n- Never use HTML.\\n- Never use *, _, #, `, [], (), {}, <>, or emojis.\\n- If the question is simple, answer in 2 to 5 short sentences.\\n- If the user asks to summarize, provide a complete summary without cutting any information.\\n- If the user asks for a detailed explanation, answer completely.\\n- Keep the language simple and easy to understand.\"\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"temperature\": 0.4,\n    \"maxOutputTokens\": 2048,\n    \"topP\": 0.9,\n    \"topK\": 40\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        336,
+        160
+      ],
+      "id": "fc2297ad-ef98-437f-beaa-c70df75f7907",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "chatId": "={{$node[\"Telegram Trigger\"].json.message.chat.id}}",
+        "text": "={{$node[\"AI Agent\"].json.output}}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        640,
+        96
+      ],
+      "id": "1e3bed28-128c-4c01-aca5-ab72ec6e3f34",
+      "name": "Send a text message",
+      "webhookId": "66a131d5-5c18-46b7-86e5-98112a076512",
+      "credentials": {
+        "telegramApi": {
+          "id": "JP02pIQbLJAJNe7Q",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{$json.message.text}}",
+        "options": {
+          "systemMessage": "You are a helpful Telegram AI assistant.\n\nRules:\n- Reply in 2-5 lines only.\n- Keep answers short and clear.\n- Remember previous conversation using memory.\n- Answer only the user's question.\n- If you don't know, say you don't know."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        -512
+      ],
+      "id": "85e8d137-af46-4409-8298-c435b2f98732",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "ea858700-3e6e-4ab1-9976-79bcad4a50f2",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "qLeT1JMxia4WElTr",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "telegram"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        320,
+        -224
+      ],
+      "id": "ba1c6d1b-653a-444e-93b5-38653f370c62",
+      "name": "Simple Memory"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        []
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "65b8beff-a3e6-42bf-abba-e8c9a6e00d18",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e3832a82b3d5225692aae5e787baa9ffdd916804b612939565b525505da6a2e7"
+  },
+  "nodeGroups": [],
+  "id": "MgtYc79ADKWKgm8n",
+  "tags": []
+}
